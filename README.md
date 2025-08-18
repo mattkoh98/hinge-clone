@@ -67,3 +67,32 @@ export default tseslint.config([
   },
 ])
 ```
+Devtools Commands:
+// add a match to conversations
+
+let convos = JSON.parse(localStorage.getItem("conversations") || "[]");
+
+convos.push({
+  id: Date.now(),  // unique id
+  partner: { id: 99, name: "Taylor (Test)" },
+  lastMessage: "👋 Hey, just matched!",
+  updatedAt: Date.now()
+});
+
+localStorage.setItem("conversations", JSON.stringify(convos));
+
+window.location.reload();
+
+// Add A like
+const likes = JSON.parse(localStorage.getItem("incoming_likes") || "[]");
+
+likes.push({
+  id: "user123",
+  name: "Emma Johnson",
+  age: 27,
+  prompts: ["What’s your favorite travel memory?", "Best date idea ever?"],
+  likedAt: Date.now()
+});
+
+localStorage.setItem("incoming_likes", JSON.stringify(likes));
+window.dispatchEvent(new Event("storage")); // 🔔 trigger UI update

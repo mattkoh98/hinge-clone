@@ -23,6 +23,7 @@
 import { Link, NavLink, Route, Routes, Navigate, useLocation } from 'react-router-dom'
 import './App.css'
 import type { JSX } from 'react'
+import { useEffect, useState } from 'react'
 
 // Pages
 import Signup from './pages/Signup'
@@ -33,6 +34,8 @@ import Conversations from './pages/Conversations'
 import Chat from './pages/Chat'
 import Onboarding from './pages/Onboarding'
 import Profile from './pages/Profile'
+import LikesYou from './pages/LikesYou'
+import LikesSent from './pages/LikesSent'
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const location = useLocation()
@@ -60,6 +63,24 @@ export default function App() {
   if (!seedEmail) localStorage.setItem('demo_email', 'demo@example.com')
   if (!seedPass)  localStorage.setItem('demo_password', 'demo1234')
 
+  const [likesCount, setLikesCount] = useState<number>(0)
+  useEffect(() => {
+    function readCount() {
+      try {
+        const raw = localStorage.getItem('incoming_likes')
+        if (!raw) { setLikesCount(0); return }
+        const arr = JSON.parse(raw)
+        setLikesCount(Array.isArray(arr) ? arr.length : 0)
+      } catch { setLikesCount(0) }
+    }
+    readCount()
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'incoming_likes') readCount()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
   const authed = !!localStorage.getItem('auth')
 
   return (
@@ -71,8 +92,9 @@ export default function App() {
             <>
               <NavLink to="/swipe">Swipe</NavLink>
               <NavLink to="/conversations">Conversations</NavLink>
+              <NavLink to="/likes">Likes{likesCount ? ` (${likesCount})` : ''}</NavLink>
+              <NavLink to="/likes-sent">Likes Sent</NavLink>
               <NavLink to="/profile">Profile</NavLink>
-              <NavLink to="/onboarding">Onboarding</NavLink>
               <span style={{ opacity: 0.75 }}>Signed in as {user?.name || user?.email || 'user'}</span>
               <button
                 onClick={() => {
@@ -106,6 +128,8 @@ export default function App() {
           <Route path="/swipe" element={<RequireAuth><Swipe /></RequireAuth>} />
           <Route path="/conversations" element={<RequireAuth><Conversations /></RequireAuth>} />
           <Route path="/conversations/:id" element={<RequireAuth><Chat /></RequireAuth>} />
+          <Route path="/likes" element={<RequireAuth><LikesYou /></RequireAuth>} />
+          <Route path="/likes-sent" element={<RequireAuth><LikesSent /></RequireAuth>} />
           <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
 
           <Route path="/loading" element={<Loading />} />
