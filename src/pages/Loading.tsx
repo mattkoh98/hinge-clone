@@ -1,3 +1,8 @@
+// ================================================
+// Loading.tsx
+// Purpose: Simple loading screen shown while app state
+// (auth/session/profile) is being initialized.
+// ================================================
 export default function Loading() {
   return (
     <div style={{ display: 'grid', placeItems: 'center', height: '70vh' }}>

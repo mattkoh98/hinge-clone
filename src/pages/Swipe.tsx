@@ -1,3 +1,9 @@
+// ================================================
+// Swipe.tsx
+// Purpose: Main discovery screen where users swipe
+// left/right on potential matches. Access restricted
+// to authenticated users only.
+// ================================================
 import { useMemo, useState } from 'react'
 
 type Profile = {

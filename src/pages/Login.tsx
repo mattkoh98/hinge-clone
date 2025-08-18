@@ -1,3 +1,9 @@
+// ================================================
+// Login.tsx
+// Purpose: Allows user to log in with email/password
+// or demo credentials. Redirects authenticated users
+// to the Swipe screen.
+// ================================================
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 

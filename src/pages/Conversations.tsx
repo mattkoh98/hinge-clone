@@ -1,3 +1,9 @@
+// ================================================
+// Conversations.tsx
+// Purpose: Displays a list of user conversations.
+// Users can click into a conversation to open Chat.
+// ================================================
+
 import { Link } from 'react-router-dom'
 
 type Conversation = {

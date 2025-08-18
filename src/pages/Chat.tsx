@@ -1,3 +1,8 @@
+// ================================================
+// Chat.tsx
+// Purpose: Handles 1-on-1 chat messaging between users.
+// Displays message history and allows sending new messages.
+// ================================================
 import { useParams, Link } from 'react-router-dom'
 import { useState, useMemo, useEffect } from 'react'
 
