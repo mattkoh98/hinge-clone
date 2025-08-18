@@ -7,11 +7,28 @@ export default function Signup() {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    // Simulate signup then navigate to swiping
-    setTimeout(() => navigate('/swipe'), 300)
+function handleSubmit(e: React.FormEvent) {
+  e.preventDefault()
+  const nameNorm = (name || '').trim()
+  const emailNorm = (email || '').trim().toLowerCase()
+  const passNorm  = (password || '').trim()
+  if (!nameNorm || !emailNorm || !passNorm) {
+    // Basic guard; keep minimal UI changes
+    alert('Please fill out name, email, and password')
+    return
   }
+
+  // Save a very simple “account” locally (MVP)
+  localStorage.setItem('auth', '1')
+  try { localStorage.setItem('user', JSON.stringify({ name: nameNorm, email: emailNorm })) } catch {}
+
+  // Persist as demo credentials so Login works consistently
+  localStorage.setItem('demo_email', emailNorm)
+  localStorage.setItem('demo_password', passNorm)
+
+  // Navigate into the app
+  navigate('/swipe', { replace: true })
+}
 
   return (
     <div style={{ maxWidth: 420, margin: '48px auto', padding: 16 }}>
