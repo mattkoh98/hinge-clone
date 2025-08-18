@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Loading from './pages/Loading'
 import Swipe from './pages/Swipe'
 import Conversations from './pages/Conversations'
+import Chat from './pages/Chat'
 import type { JSX } from 'react'
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -12,6 +13,14 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   const isAuthed = !!localStorage.getItem('auth')
   if (!isAuthed) {
     return <Navigate to="/login" replace state={{ from: location }} />
+  }
+  return children
+}
+
+function PublicOnly({ children }: { children: JSX.Element }) {
+  const isAuthed = !!localStorage.getItem('auth')
+  if (isAuthed) {
+    return <Navigate to="/swipe" replace />
   }
   return children
 }
@@ -59,11 +68,12 @@ function App() {
       <main>
         <Routes>
           <Route path="/" element={<Navigate to={localStorage.getItem('auth') ? '/swipe' : '/login'} replace />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<PublicOnly><Signup /></PublicOnly>} />
+          <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
           <Route path="/loading" element={<Loading />} />
           <Route path="/swipe" element={<RequireAuth><Swipe /></RequireAuth>} />
           <Route path="/conversations" element={<RequireAuth><Conversations /></RequireAuth>} />
+          <Route path="/conversations/:id" element={<RequireAuth><Chat /></RequireAuth>} />
           <Route path="*" element={<div style={{ padding: 24 }}>Not found</div>} />
         </Routes>
       </main>

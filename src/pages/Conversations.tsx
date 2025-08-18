@@ -19,7 +19,7 @@ export default function Conversations() {
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {MOCK_CONVERSATIONS.map((c) => (
           <li key={c.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-            <Link to={`#`} style={{ display: 'block', padding: '12px 4px', textDecoration: 'none' }}>
+            <Link to={`/conversations/${c.id}`} style={{ display: 'block', padding: '12px 4px', textDecoration: 'none' }}>
               <div style={{ fontWeight: 600 }}>{c.name}</div>
               <div style={{ color: '#374151' }}>{c.lastMessage}</div>
             </Link>
@@ -29,4 +29,3 @@ export default function Conversations() {
     </div>
   )
 }
-
