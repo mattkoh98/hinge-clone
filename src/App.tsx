@@ -21,7 +21,7 @@
  */
 
 import { Link, NavLink, Route, Routes, Navigate, useLocation } from 'react-router-dom'
-import './App.css'
+import './styles/App.css'
 import type { JSX } from 'react'
 import { useEffect, useState } from 'react'
 
