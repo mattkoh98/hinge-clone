@@ -20,10 +20,9 @@
  * - Keep this file lean: routing, nav, guards only.
  */
 
-import { Link, NavLink, Route, Routes, Navigate, useLocation } from 'react-router-dom'
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom'
 import './styles/App.css'
 import type { JSX } from 'react'
-import { useEffect, useState } from 'react'
 
 // Pages
 import Signup from './pages/Signup'
@@ -36,6 +35,7 @@ import Onboarding from './pages/Onboarding'
 import Profile from './pages/Profile'
 import LikesYou from './pages/LikesYou'
 import LikesSent from './pages/LikesSent'
+import Navbar from './components/Navbar'
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const location = useLocation()
@@ -63,58 +63,11 @@ export default function App() {
   if (!seedEmail) localStorage.setItem('demo_email', 'demo@example.com')
   if (!seedPass)  localStorage.setItem('demo_password', 'demo1234')
 
-  const [likesCount, setLikesCount] = useState<number>(0)
-  useEffect(() => {
-    function readCount() {
-      try {
-        const raw = localStorage.getItem('incoming_likes')
-        if (!raw) { setLikesCount(0); return }
-        const arr = JSON.parse(raw)
-        setLikesCount(Array.isArray(arr) ? arr.length : 0)
-      } catch { setLikesCount(0) }
-    }
-    readCount()
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'incoming_likes') readCount()
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
-
   const authed = !!localStorage.getItem('auth')
 
   return (
     <div>
-      <nav style={{ borderBottom: '1px solid #e5e7eb', padding: '8px 12px' }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <Link to="/" style={{ fontWeight: 700, textDecoration: 'none' }}>HingeClone</Link>
-          {authed ? (
-            <>
-              <NavLink to="/swipe">Swipe</NavLink>
-              <NavLink to="/conversations">Conversations</NavLink>
-              <NavLink to="/likes">Likes{likesCount ? ` (${likesCount})` : ''}</NavLink>
-              <NavLink to="/likes-sent">Likes Sent</NavLink>
-              <NavLink to="/profile">Profile</NavLink>
-              <span style={{ opacity: 0.75 }}>Signed in as {user?.name || user?.email || 'user'}</span>
-              <button
-                onClick={() => {
-                  localStorage.removeItem('auth')
-                  window.location.href = '/login'
-                }}
-                style={{ background: '#111827', color: 'white', border: 'none', padding: '6px 10px', borderRadius: 6, cursor: 'pointer' }}
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <NavLink to="/signup">Sign up</NavLink>
-              <NavLink to="/login">Log in</NavLink>
-            </>
-          )}
-        </div>
-      </nav>
-
+      <Navbar />
       <main>
         <Routes>
           <Route path="/" element={<Navigate to={authed ? '/swipe' : '/login'} replace />} />
