@@ -3,10 +3,23 @@
 // Purpose: Handles 1-on-1 chat messaging between users.
 // Displays message history and allows sending new messages.
 // ================================================
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { useState, useMemo, useEffect } from 'react'
 
 type Message = { id: number; from: 'me' | 'them'; text: string }
+
+function getConversationMeta(id: string | number): { displayName: string; preview?: string } {
+  try {
+    const raw = localStorage.getItem('conversations')
+    const arr = raw ? JSON.parse(raw) : []
+    const conv = Array.isArray(arr) ? arr.find((c: any) => String(c?.id) === String(id)) : null
+    if (conv) {
+      const displayName = conv?.partner?.name || conv?.name || `Conversation #${id}`
+      return { displayName, preview: conv?.lastMessage }
+    }
+  } catch {}
+  return { displayName: `Conversation #${id}` }
+}
 
 // Simple defaults; we also persist to localStorage per thread
 const DEFAULT_THREADS: Record<string, Message[]> = {
@@ -26,6 +39,11 @@ const DEFAULT_THREADS: Record<string, Message[]> = {
 
 export default function Chat() {
   const { id = '' } = useParams()
+  const location = useLocation() as any
+  const nameFromState = (location?.state && (location.state as any).name) || undefined
+  const meta = getConversationMeta(id)
+  const displayName = nameFromState || meta.displayName
+
   const threadKey = `thread_${id}`
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -41,13 +59,45 @@ export default function Chat() {
     }
   }, [id])
 
+  // If the thread is empty, seed it with the conversation preview (when it looks like a real message)
+  useEffect(() => {
+    if (!id) return
+    const seededKey = `thread_seeded_${id}`
+    const alreadySeeded = localStorage.getItem(seededKey) === '1'
+    if (alreadySeeded) return
+
+    const preview = meta.preview?.trim()
+    if (!preview) return
+    // Avoid seeding generic system text like "Matched!"
+    if (/^Matched!/i.test(preview)) {
+      localStorage.setItem(seededKey, '1')
+      return
+    }
+
+    let from: 'me' | 'them' = 'them'
+    let text = preview
+    // If the preview was saved as "You: ...", treat it as a sent message
+    const m = /^You:\s*(.*)$/.exec(preview)
+    if (m) { from = 'me'; text = m[1] }
+
+    // Only seed when the current thread is empty
+    const raw = localStorage.getItem(`thread_${id}`)
+    const existing = raw ? (JSON.parse(raw) as Message[]) : []
+    if (existing.length === 0) {
+      const seeded: Message[] = [{ id: 1, from, text }]
+      setMessages(seeded)
+      try { localStorage.setItem(`thread_${id}`, JSON.stringify(seeded)) } catch {}
+    }
+    localStorage.setItem(seededKey, '1')
+  }, [id])
+
   // Persist on change
   useEffect(() => {
     if (!id) return
     try { localStorage.setItem(threadKey, JSON.stringify(messages)) } catch {}
   }, [id, messages])
 
-  const title = useMemo(() => `Conversation #${id}`, [id])
+  const title = useMemo(() => displayName, [displayName])
 
   function send() {
     const txt = input.trim()

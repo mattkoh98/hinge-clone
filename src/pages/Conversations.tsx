@@ -64,7 +64,7 @@ export default function Conversations() {
             const displayName = c.partner?.name || c.name || 'Unknown'
             return (
               <li key={c.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <Link to={`/conversations/${c.id}`} style={{ display: 'block', padding: '12px 4px', textDecoration: 'none' }}>
+                <Link to={`/conversations/${c.id}`} state={{ name: displayName }} style={{ display: 'block', padding: '12px 4px', textDecoration: 'none' }}>
                   <div style={{ fontWeight: 600 }}>{displayName}</div>
                   <div style={{ color: '#374151' }}>{c.lastMessage}</div>
                 </Link>
