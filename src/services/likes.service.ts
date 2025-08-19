@@ -1,21 +1,25 @@
-// likes.service.ts
-// Service wrapper for Likes functionality.
-// Delegates to LikesLocalAdapter for demo storage (localStorage).
+// =====================================================================
+// services/likes.service.ts — Thin wrapper over the Likes adapter
+// Uses the localStorage adapter for now; later we can swap to HTTP.
+// =====================================================================
 
-import LikesLocalAdapter from "../adapters/local/likes.service";
+import type { LikeContext, IncomingLike, OutgoingLike } from '../domain/like'
+import { LikesLocalAdapter } from '../adapters/local/likes.service'
 
-export function getIncomingLikes() {
-  return LikesLocalAdapter.getIncomingLikes();
+const adapter = new LikesLocalAdapter()
+
+export function getIncomingLikes(): Promise<IncomingLike[]> {
+  return adapter.incoming()
 }
 
-export function getSentLikes() {
-  return LikesLocalAdapter.getSentLikes();
+export function getSentLikes(): Promise<OutgoingLike[]> {
+  return adapter.sent()
 }
 
-export function sendLike(profile: any, meta?: { comment?: string; context?: string }) {
-  return LikesLocalAdapter.sendLike(profile, meta);
+export function sendLike(toUser: { id: string; name?: string }, opts?: { comment?: string; context?: LikeContext }) {
+  return adapter.send(toUser, opts)
 }
 
-export function removeIncomingLike(profileId: string) {
-  return LikesLocalAdapter.removeIncomingLike(profileId);
+export function removeIncomingLike(likeId: string) {
+  return adapter.removeIncoming(likeId)
 }
