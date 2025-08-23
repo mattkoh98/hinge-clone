@@ -6,9 +6,9 @@
 // =====================================================================
 
 import type { Match } from '../domain/match'
-import { MatchesLocalAdapter } from '../adapters/local/matches.local'
+import { createMatchesService } from './factory'
 
-const adapter = new MatchesLocalAdapter()
+const adapter = createMatchesService()
 
 export function listMatches(): Promise<Match[]> {
   return adapter.list()

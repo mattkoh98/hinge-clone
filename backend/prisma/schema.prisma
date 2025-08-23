@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Profile relationship
+  profile Profile?
+
+  // Auth sessions
+  sessions Session[]
+
+  // Likes sent/received
+  likesSent     OutgoingLike[] @relation("UserLikesSent")
+  likesReceived IncomingLike[] @relation("UserLikesReceived")
+
+  // Matches
+  matchesAsUserA Match[] @relation("UserAMatch")
+  matchesAsUserB Match[] @relation("UserBMatch")
+
+  // Conversations
+  conversations ConversationParticipant[]
+
+  // Messages
+  messages Message[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Profile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  accountMethod String   @default("email") // "email" | "phone"
+  name          String
+  email         String
+  dob           String   // ISO date (YYYY-MM-DD)
+  location      String
+  gender        String   // "woman" | "man" | "nonbinary" | "prefer_not_say"
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos Photo[]
+  prompts Prompt[]
+
+  @@map("profiles")
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  profileId String
+  url       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("photos")
+}
+
+model Prompt {
+  id        String   @id @default(cuid())
+  profileId String
+  question  String
+  answer    String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("prompts")
+}
+
+model IncomingLike {
+  id        String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  comment    String?
+  photoIndex Int?
+  promptId   String?
+  createdAt  DateTime @default(now())
+
+  // Relationships
+  fromUser User @relation("UserLikesSent", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("UserLikesReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@map("incoming_likes")
+}
+
+model OutgoingLike {
+  id        String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  comment    String?
+  photoIndex Int?
+  promptId   String?
+  createdAt  DateTime @default(now())
+
+  // Relationships
+  fromUser User @relation("UserLikesSent", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("UserLikesReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@map("outgoing_likes")
+}
+
+model Match {
+  id             String   @id @default(cuid())
+  userAId        String
+  userBId        String
+  conversationId String?
+  createdAt      DateTime @default(now())
+
+  // Relationships
+  userA        User         @relation("UserAMatch", fields: [userAId], references: [id], onDelete: Cascade)
+  userB        User         @relation("UserBMatch", fields: [userBId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+
+  @@unique([userAId, userBId])
+  @@map("matches")
+}
+
+model Conversation {
+  id            String   @id @default(cuid())
+  participants  ConversationParticipant[]
+  messages      Message[]
+  lastMessage   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  match Match?
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime @default(now())
+
+  // Relationships
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  timestamp      DateTime @default(now())
+
+  // Relationships
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}

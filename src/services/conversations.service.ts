@@ -4,11 +4,11 @@
  * Pages should import from here (not from adapters) so we can swap
  * local → http later without touching UI.
  */
-import { LocalConversationsAdapter } from '../adapters/local/conversations.local'
+import { createConversationsService } from './factory'
 import type { Message } from '../domain/conversation'
 
-// TODO: later replace with a flag/env to toggle HTTP adapter
-const adapter = new LocalConversationsAdapter()
+// Factory automatically toggles between local and HTTP adapters
+const adapter = createConversationsService()
 
 export function getConversations() {
   return adapter.listConversations()

@@ -5,7 +5,9 @@
 // =============================================================
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''; // e.g. 'https://api.example.com'
+import { config } from '../../config/environment'
+
+const BASE_URL = config.api.baseUrl
 
 function authHeader() {
   // For MVP: no token; later attach JWT/session if needed
@@ -14,14 +16,19 @@ function authHeader() {
 
 export async function http<T>(path: string, options: { method?: HttpMethod; body?: any; headers?: Record<string,string> } = {}): Promise<T> {
   const { method = 'GET', body, headers = {} } = options;
+  // Handle FormData vs JSON
+  const isFormData = body instanceof FormData;
+  const requestHeaders = {
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    ...authHeader(),
+    ...headers,
+  };
+  
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeader(),
-      ...headers,
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    headers: requestHeaders,
+    body: isFormData ? body : (body !== undefined ? JSON.stringify(body) : undefined),
+    credentials: 'include', // Include cookies for JWT sessions
   });
   if (!res.ok) {
     const txt = await res.text().catch(() => '');

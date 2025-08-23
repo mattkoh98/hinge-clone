@@ -1,5 +1,8 @@
 // ================================================
 // featureFlags.ts — Purpose: Compile/runtime feature toggles
-// Flip USE_API to true when HTTP adapters are ready.
+// Now controlled via environment variables
 // ================================================
-export const USE_API = false; // <-- switch to true when backend endpoints land
+import { config } from './environment'
+
+export const USE_API = config.features.useApi
+export const ENABLE_REALTIME = config.features.enableRealTime

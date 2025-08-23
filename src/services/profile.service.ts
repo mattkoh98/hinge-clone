@@ -5,10 +5,10 @@
 // Pages import from here; later we can swap to HTTP adapter behind the scenes.
 // =====================================================================
 
-import { LocalProfileAdapter } from '../adapters/local/profile.local'
+import { createProfileService } from './factory'
 import type { ProfileV1, Prompt } from '../domain/profile'
 
-const adapter = new LocalProfileAdapter()
+const adapter = createProfileService()
 
 export function getProfile(): Promise<ProfileV1 | null> { return adapter.get() }
 export function saveProfile(patch: Partial<ProfileV1>): Promise<ProfileV1> { return adapter.upsert(patch) }

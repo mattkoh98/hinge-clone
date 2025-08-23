@@ -1,14 +1,14 @@
 
 
 // =====================================================================
-// services/auth.local.ts — Service wrapper over LocalAuthAdapter
+// services/auth.service.ts — Service wrapper over auth adapters
 // (Filename kept as provided; acts as the public surface for pages.)
 // =====================================================================
 
-import { LocalAuthAdapter } from '../adapters/local/auth.local'
+import { createAuthService } from './factory'
 import type { User } from '../domain/user'
 
-const adapter = new LocalAuthAdapter()
+const adapter = createAuthService()
 
 export function currentUser() { return adapter.currentUser() }
 export function login(email: string, password: string) { return adapter.login(email, password) }

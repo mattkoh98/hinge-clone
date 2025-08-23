@@ -8,3 +8,4 @@ export * from './media.service';
 export * from './likes.service';
 export * from './matches.service';
 export * from './conversations.service';
+export * from './factory';

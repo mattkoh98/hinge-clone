@@ -4,9 +4,9 @@
 // services/media.service.ts — Thin wrapper for media operations
 // =====================================================================
 
-import { LocalMediaAdapter } from '../adapters/local/media.local'
+import { createMediaService } from './factory'
 
-const adapter = new LocalMediaAdapter()
+const adapter = createMediaService()
 
 export function validateMediaUrl(url: string) { return adapter.validateUrl(url) }
 export function uploadFromUrl(url: string) { return adapter.uploadFromUrl(url) }

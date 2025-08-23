@@ -4,9 +4,9 @@
 // =====================================================================
 
 import type { LikeContext, IncomingLike, OutgoingLike } from '../domain/like'
-import { LikesLocalAdapter } from '../adapters/local/likes.service'
+import { createLikesService } from './factory'
 
-const adapter = new LikesLocalAdapter()
+const adapter = createLikesService()
 
 export function getIncomingLikes(): Promise<IncomingLike[]> {
   return adapter.incoming()
