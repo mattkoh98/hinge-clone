@@ -10,30 +10,33 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
     try {
       const conversations = await prisma.conversation.findMany({
         where: {
-          participants: {
-            some: { userId: user.id }
+          match: {
+            OR: [
+              { userAId: user.id },
+              { userBId: user.id }
+            ]
           }
         },
         include: {
-          participants: {
+          match: {
             include: {
-              user: { select: { id: true, name: true } }
+              userA: { select: { id: true, name: true } },
+              userB: { select: { id: true, name: true } }
             }
           },
           messages: {
-            orderBy: { timestamp: 'desc' },
+            orderBy: { createdAt: 'desc' },
             take: 1
           }
         },
-        orderBy: { updatedAt: 'desc' }
+        orderBy: { createdAt: 'desc' }
       })
 
       return conversations.map(conv => ({
         id: conv.id,
-        participants: conv.participants.map(p => p.user),
-        lastMessage: conv.messages[0]?.content,
-        createdAt: conv.createdAt,
-        updatedAt: conv.updatedAt
+        participants: [conv.match.userA, conv.match.userB],
+        lastMessage: conv.messages[0]?.text,
+        createdAt: conv.createdAt
       }))
     } catch (error) {
       fastify.log.error(error)
@@ -50,18 +53,22 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
       const conversation = await prisma.conversation.findFirst({
         where: {
           id,
-          participants: {
-            some: { userId: user.id }
+          match: {
+            OR: [
+              { userAId: user.id },
+              { userBId: user.id }
+            ]
           }
         },
         include: {
-          participants: {
+          match: {
             include: {
-              user: { select: { id: true, name: true } }
+              userA: { select: { id: true, name: true } },
+              userB: { select: { id: true, name: true } }
             }
           },
           messages: {
-            orderBy: { timestamp: 'asc' }
+            orderBy: { createdAt: 'asc' }
           }
         }
       })
@@ -72,10 +79,9 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
 
       return {
         id: conversation.id,
-        participants: conversation.participants.map(p => p.user),
+        participants: [conversation.match.userA, conversation.match.userB],
         messages: conversation.messages,
-        createdAt: conversation.createdAt,
-        updatedAt: conversation.updatedAt
+        createdAt: conversation.createdAt
       }
     } catch (error) {
       fastify.log.error(error)
@@ -93,15 +99,10 @@ export async function conversationsRoutes(fastify: FastifyInstance) {
       const message = await prisma.message.create({
         data: {
           conversationId: id,
-          senderId: user.id,
-          content
+          authorId: user.id,
+          text: content,
+          kind: 'TEXT'
         }
-      })
-
-      // Update conversation timestamp
-      await prisma.conversation.update({
-        where: { id },
-        data: { updatedAt: new Date() }
       })
 
       return message

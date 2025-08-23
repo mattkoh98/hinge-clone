@@ -25,11 +25,8 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
     // Check if session exists in database
     const session = await prisma.session.findFirst({
       where: {
-        token,
+        jti: token,
         expiresAt: { gt: new Date() }
-      },
-      include: {
-        user: true
       }
     })
 
@@ -37,11 +34,21 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
       return reply.status(401).send({ error: 'Invalid or expired session' })
     }
 
+    // Get user data
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { id: true, email: true, name: true }
+    })
+
+    if (!user) {
+      return reply.status(401).send({ error: 'User not found' })
+    }
+
     // Attach user to request
     ;(request as AuthenticatedRequest).user = {
-      id: session.user.id,
-      email: session.user.email,
-      name: session.user.name || undefined
+      id: user.id,
+      email: user.email,
+      name: user.name || undefined
     }
   } catch (error) {
     return reply.status(401).send({ error: 'Invalid token' })
@@ -60,19 +67,23 @@ export async function optionalAuth(request: FastifyRequest, reply: FastifyReply)
     
     const session = await prisma.session.findFirst({
       where: {
-        token,
+        jti: token,
         expiresAt: { gt: new Date() }
-      },
-      include: {
-        user: true
       }
     })
 
     if (session) {
-      ;(request as AuthenticatedRequest).user = {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name || undefined
+      const user = await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { id: true, email: true, name: true }
+      })
+
+      if (user) {
+        ;(request as AuthenticatedRequest).user = {
+          id: user.id,
+          email: user.email,
+          name: user.name || undefined
+        }
       }
     }
   } catch (error) {

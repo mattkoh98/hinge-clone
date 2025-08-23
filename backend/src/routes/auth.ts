@@ -34,7 +34,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.password)
+      const isValidPassword = await bcrypt.compare(password, user.passwordHash)
       if (!isValidPassword) {
         return reply.status(401).send({ error: 'Invalid credentials' })
       }
@@ -51,7 +51,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       await prisma.session.create({
         data: {
           userId: user.id,
-          token,
+          jti: token,
           expiresAt
         }
       })
@@ -99,7 +99,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const user = await prisma.user.create({
         data: {
           email,
-          password: hashedPassword,
+          passwordHash: hashedPassword,
           name
         }
       })
@@ -116,7 +116,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       await prisma.session.create({
         data: {
           userId: user.id,
-          token,
+          jti: token,
           expiresAt
         }
       })
