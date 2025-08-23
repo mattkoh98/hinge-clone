@@ -1,10 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
-import { prisma } from '../index'
+import { prisma } from '../lib/prisma'
 import { config } from '../config'
 import { authenticate } from '../middleware/auth'
+import { signToken } from '../lib/jwt'
 
 // Request schemas
 const loginSchema = z.object({
@@ -40,9 +40,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       // Generate JWT token
-      const token = jwt.sign({ userId: user.id }, config.jwt.secret, {
-        expiresIn: config.jwt.expiresIn
-      })
+      const token = signToken({ userId: user.id })
 
       // Create session
       const expiresAt = new Date()
@@ -105,9 +103,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       })
 
       // Generate JWT token
-      const token = jwt.sign({ userId: user.id }, config.jwt.secret, {
-        expiresIn: config.jwt.expiresIn
-      })
+      const token = signToken({ userId: user.id })
 
       // Create session
       const expiresAt = new Date()

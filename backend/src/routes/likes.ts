@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
-import { prisma } from '../index'
+import { prisma } from '../lib/prisma'
 import { authenticate } from '../middleware/auth'
 
 export async function likesRoutes(fastify: FastifyInstance) {

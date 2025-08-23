@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
-import { prisma } from '../index'
+import { prisma } from '../lib/prisma'
 import { authenticate } from '../middleware/auth'
 
 export async function conversationsRoutes(fastify: FastifyInstance) {

@@ -3,17 +3,17 @@ import cors from '@fastify/cors'
 import cookie from '@fastify/cookie'
 import multipart from '@fastify/multipart'
 import rateLimit from '@fastify/rate-limit'
-import { PrismaClient } from '@prisma/client'
 import { config } from './config'
+import { env } from './env'
+import { prisma } from './lib/prisma'
+import { authRateLimit, apiRateLimit } from './lib/ratelimit'
+import { corsMiddleware } from './middleware/cors'
 import { authRoutes } from './routes/auth'
 import { profileRoutes } from './routes/profile'
 import { likesRoutes } from './routes/likes'
 import { matchesRoutes } from './routes/matches'
 import { conversationsRoutes } from './routes/conversations'
 import { mediaRoutes } from './routes/media'
-
-// Initialize Prisma
-export const prisma = new PrismaClient()
 
 // Create Fastify instance
 const fastify = Fastify({
@@ -26,11 +26,6 @@ const fastify = Fastify({
 })
 
 // Register plugins
-await fastify.register(cors, {
-  origin: config.clientUrl,
-  credentials: true
-})
-
 await fastify.register(cookie, {
   secret: config.jwt.secret
 })
@@ -42,9 +37,16 @@ await fastify.register(multipart, {
   }
 })
 
-await fastify.register(rateLimit, {
-  max: 100,
-  timeWindow: '1 minute'
+// Add custom middleware
+fastify.addHook('preHandler', corsMiddleware)
+fastify.addHook('preHandler', apiRateLimit)
+
+// Add auth rate limiting to auth routes
+fastify.addHook('preHandler', (request, reply, done) => {
+  if (request.url.startsWith('/auth')) {
+    authRateLimit(request, reply)
+  }
+  done()
 })
 
 // Register routes
@@ -76,10 +78,10 @@ process.on('SIGTERM', async () => {
 // Start server
 try {
   await fastify.listen({ 
-    port: config.port, 
+    port: env.PORT, 
     host: '0.0.0.0' 
   })
-  console.log(`🚀 Server running on port ${config.port}`)
+  console.log(`🚀 Server running on port ${env.PORT}`)
 } catch (err) {
   fastify.log.error(err)
   process.exit(1)

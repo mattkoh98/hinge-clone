@@ -1,7 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
-import jwt from 'jsonwebtoken'
-import { config } from '../config'
-import { prisma } from '../index'
+import { prisma } from '../lib/prisma'
+import { verifyToken } from '../lib/jwt'
 
 export interface AuthenticatedRequest extends FastifyRequest {
   user: {
@@ -20,7 +19,7 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
     }
 
     // Verify JWT token
-    const decoded = jwt.verify(token, config.jwt.secret) as { userId: string }
+    const decoded = verifyToken(token)
     
     // Check if session exists in database
     const session = await prisma.session.findFirst({
@@ -63,7 +62,7 @@ export async function optionalAuth(request: FastifyRequest, reply: FastifyReply)
       return // Continue without authentication
     }
 
-    const decoded = jwt.verify(token, config.jwt.secret) as { userId: string }
+    const decoded = verifyToken(token)
     
     const session = await prisma.session.findFirst({
       where: {

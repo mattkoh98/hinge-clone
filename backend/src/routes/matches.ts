@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
-import { prisma } from '../index'
+import { prisma } from '../lib/prisma'
 import { authenticate } from '../middleware/auth'
 
 export async function matchesRoutes(fastify: FastifyInstance) {
@@ -26,8 +26,7 @@ export async function matchesRoutes(fastify: FastifyInstance) {
         id: match.id,
         userA: match.userA,
         userB: match.userB,
-        createdAt: match.createdAt,
-        conversationId: match.conversationId
+        createdAt: match.createdAt
       }))
     } catch (error) {
       fastify.log.error(error)
@@ -63,8 +62,7 @@ export async function matchesRoutes(fastify: FastifyInstance) {
         id: match.id,
         userA: match.userA,
         userB: match.userB,
-        createdAt: match.createdAt,
-        conversationId: match.conversationId
+        createdAt: match.createdAt
       }
     } catch (error) {
       fastify.log.error(error)
