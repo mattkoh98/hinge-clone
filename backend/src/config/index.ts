@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import 'dotenv/config'
 
 // Environment variable schema
 const envSchema = z.object({
@@ -21,7 +22,7 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string(),
   
   // Client
-  CLIENT_URL: z.string().default('http://localhost:5173')
+  CLIENT_URL: z.string().default('http://localhost:5174')
 })
 
 // Load and validate environment variables

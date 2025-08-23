@@ -9,7 +9,7 @@ import { USE_API } from '../config/featureFlags'
 import { LocalAuthAdapter } from '../adapters/local/auth.local'
 import { LocalProfileAdapter } from '../adapters/local/profile.local'
 import { LikesLocalAdapter } from '../adapters/local/likes.service'
-import { LocalMatchesAdapter } from '../adapters/local/matches.local'
+import { MatchesLocalAdapter } from '../adapters/local/matches.local'
 import { LocalConversationsAdapter } from '../adapters/local/conversations.local'
 import { LocalMediaAdapter } from '../adapters/local/media.local'
 
@@ -42,7 +42,7 @@ export function createLikesService(): LikesPort {
 }
 
 export function createMatchesService(): MatchesPort {
-  return USE_API ? new HttpMatchesAdapter() : new LocalMatchesAdapter()
+  return USE_API ? new HttpMatchesAdapter() : new MatchesLocalAdapter()
 }
 
 export function createConversationsService(): ConversationsPort {

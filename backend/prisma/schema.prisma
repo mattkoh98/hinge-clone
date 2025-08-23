@@ -1,5 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// prisma/schema.prisma
+// Data model for Hinge-like app: profiles, photos, prompts,
+// targeted likes (photo/prompt), matches, conversations, messages.
 
 generator client {
   provider = "prisma-client-js"
@@ -10,181 +11,169 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Profile relationship
-  profile Profile?
-
-  // Auth sessions
-  sessions Session[]
-
-  // Likes sent/received
-  likesSent     OutgoingLike[] @relation("UserLikesSent")
-  likesReceived IncomingLike[] @relation("UserLikesReceived")
-
-  // Matches
-  matchesAsUserA Match[] @relation("UserAMatch")
-  matchesAsUserB Match[] @relation("UserBMatch")
-
-  // Conversations
-  conversations ConversationParticipant[]
-
-  // Messages
-  messages Message[]
-
-  @@map("users")
+// ----- Enums -----
+enum LikeStatus {
+  PENDING
+  ACCEPTED
+  SKIPPED
 }
 
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+enum MessageKind {
+  TEXT
+  LIKE
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+// ----- Core Models -----
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@map("sessions")
+  // Relations
+  profile       Profile?
+  // Likes
+  sentLikes     Like[]   @relation("sentlikes")
+  receivedLikes Like[]   @relation("receivedlikes")
+  // Messages
+  messages      Message[]
+  // Sessions (optional)
+  sessions      Session[]
+  // Matches (back-relations for Match.userA and Match.userB)
+  matchesAsUserA Match[] @relation("userA")
+  matchesAsUserB Match[] @relation("userB")
+
+  @@index([email])
 }
 
 model Profile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  accountMethod String   @default("email") // "email" | "phone"
-  name          String
-  email         String
-  dob           String   // ISO date (YYYY-MM-DD)
-  location      String
-  gender        String   // "woman" | "man" | "nonbinary" | "prefer_not_say"
-  completedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relationships
-  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  photos Photo[]
-  prompts Prompt[]
+  // Basics
+  dob        DateTime?
+  location   String?
+  gender     String?
+  jobTitle   String?
+  company    String?
+  school     String?
 
-  @@map("profiles")
+  photos     Photo[]
+  prompts    Prompt[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Photo {
-  id        String   @id @default(cuid())
-  profileId String
-  url       String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  profileId  String
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
-  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  url        String
+  position   Int      @default(0)
+  createdAt  DateTime @default(now())
 
-  @@map("photos")
+  @@index([profileId, position])
 }
 
 model Prompt {
-  id        String   @id @default(cuid())
-  profileId String
-  question  String
-  answer    String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  profileId  String
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
-  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@map("prompts")
-}
-
-model IncomingLike {
-  id        String   @id @default(cuid())
-  fromUserId String
-  toUserId   String
-  comment    String?
-  photoIndex Int?
-  promptId   String?
+  question   String
+  answer     String
   createdAt  DateTime @default(now())
 
-  // Relationships
-  fromUser User @relation("UserLikesSent", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser   User @relation("UserLikesReceived", fields: [toUserId], references: [id], onDelete: Cascade)
-
-  @@map("incoming_likes")
+  @@index([profileId])
 }
 
-model OutgoingLike {
-  id        String   @id @default(cuid())
-  fromUserId String
-  toUserId   String
-  comment    String?
-  photoIndex Int?
-  promptId   String?
-  createdAt  DateTime @default(now())
+// A Like is created by one user (fromUser) for another (toUser).
+// It can target a photo or a prompt via `context` JSON.
+model Like {
+  id          String      @id @default(cuid())
+  fromUserId  String
+  fromUser    User        @relation("sentlikes", fields: [fromUserId], references: [id], onDelete: Cascade)
 
-  // Relationships
-  fromUser User @relation("UserLikesSent", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser   User @relation("UserLikesReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  toUserId    String
+  toUser      User        @relation("receivedlikes", fields: [toUserId], references: [id], onDelete: Cascade)
 
-  @@map("outgoing_likes")
+  comment     String?
+  context     Json?       // e.g., { "photoIndex": 1 } OR { "promptId": "p1_a" }
+  status      LikeStatus  @default(PENDING)
+
+  createdAt   DateTime    @default(now())
+
+  // Backref to Match (when accepted)
+  acceptedBy  Match?
+
+  @@index([toUserId, status, createdAt])
+  @@index([fromUserId, createdAt])
 }
 
+// Once a like is accepted, we create a Match (A,B) and a Conversation.
 model Match {
-  id             String   @id @default(cuid())
-  userAId        String
-  userBId        String
-  conversationId String?
-  createdAt      DateTime @default(now())
+  id         String   @id @default(cuid())
 
-  // Relationships
-  userA        User         @relation("UserAMatch", fields: [userAId], references: [id], onDelete: Cascade)
-  userB        User         @relation("UserBMatch", fields: [userBId], references: [id], onDelete: Cascade)
-  conversation Conversation? @relation(fields: [conversationId], references: [id])
+  userAId    String
+  userA      User     @relation("userA", fields: [userAId], references: [id], onDelete: Cascade)
 
-  @@unique([userAId, userBId])
-  @@map("matches")
+  userBId    String
+  userB      User     @relation("userB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  likeId     String   @unique
+  like       Like     @relation(fields: [likeId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  // 1-1 with Conversation
+  conversation Conversation?
+
+  @@index([userAId])
+  @@index([userBId])
+  // (Optional) To prevent duplicate matches regardless of order you'd need a DB-level check.
+  // As a simpler approach, you can enforce ordering of A/B in code.
 }
 
 model Conversation {
-  id            String   @id @default(cuid())
-  participants  ConversationParticipant[]
-  messages      Message[]
-  lastMessage   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(cuid())
 
-  // Relationships
-  match Match?
+  matchId    String   @unique
+  match      Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
-  @@map("conversations")
-}
-
-model ConversationParticipant {
-  id             String   @id @default(cuid())
-  conversationId String
-  userId         String
-  joinedAt       DateTime @default(now())
-
-  // Relationships
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([conversationId, userId])
-  @@map("conversation_participants")
+  createdAt  DateTime @default(now())
+  messages   Message[]
 }
 
 model Message {
-  id             String   @id @default(cuid())
-  conversationId String
-  senderId       String
-  content        String
-  timestamp      DateTime @default(now())
+  id              String       @id @default(cuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  // Relationships
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-  @@map("messages")
+  kind            MessageKind  @default(TEXT)
+  text            String?
+
+  createdAt       DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([authorId, createdAt])
+}
+
+// Optional: server-managed sessions (if you store JTI or refresh tokens)
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jti        String   @unique
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([userId])
 }
