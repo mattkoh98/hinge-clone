@@ -1,6 +1,6 @@
-# React + TypeScript + Vite
+# Tulip - Dating App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern dating application built with React + TypeScript + Vite, featuring profiles, matching, and conversations.
 
 Currently, two official plugins are available:
 

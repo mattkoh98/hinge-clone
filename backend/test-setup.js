@@ -48,6 +48,7 @@ async function testSetup() {
     console.log('1. npm run dev (start development server)')
     console.log('2. Test API endpoints with Postman/curl')
     console.log('3. Update frontend VITE_USE_API=true to test integration')
+    console.log('4. Test the Tulip dating app features')
     
   } catch (error) {
     console.error('❌ Setup test failed:', error.message)

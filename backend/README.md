@@ -1,6 +1,6 @@
-# Hinge Clone Backend
+# Tulip Backend
 
-Node.js backend API for the Hinge Clone application built with Fastify, Prisma, and PostgreSQL.
+Node.js backend API for the Tulip dating application built with Fastify, Prisma, and PostgreSQL.
 
 ## Features
 
@@ -39,7 +39,7 @@ Node.js backend API for the Hinge Clone application built with Fastify, Prisma, 
    Create a `.env` file in the backend directory:
    ```env
    # Database
-   DATABASE_URL="postgresql://username:password@localhost:5432/hinge_clone"
+   DATABASE_URL="postgresql://username:password@localhost:5432/tulip"
    
    # JWT
    JWT_SECRET="your-super-secret-jwt-key-here"

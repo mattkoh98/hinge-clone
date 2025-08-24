@@ -17,9 +17,9 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
   
   // Cloudinary
-  CLOUDINARY_CLOUD_NAME: z.string(),
-  CLOUDINARY_API_KEY: z.string(),
-  CLOUDINARY_API_SECRET: z.string(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
   
   // Client
   CLIENT_URL: z.string().default('http://localhost:5174')
@@ -53,9 +53,9 @@ export const config = {
   
   // Cloudinary
   cloudinary: {
-    cloudName: env.CLOUDINARY_CLOUD_NAME,
-    apiKey: env.CLOUDINARY_API_KEY,
-    apiSecret: env.CLOUDINARY_API_SECRET
+    cloudName: env.CLOUDINARY_CLOUD_NAME || 'placeholder',
+    apiKey: env.CLOUDINARY_API_KEY || 'placeholder',
+    apiSecret: env.CLOUDINARY_API_SECRET || 'placeholder'
   },
   
   // Client

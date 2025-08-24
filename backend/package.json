@@ -1,7 +1,7 @@
 {
-  "name": "hinge-clone-backend",
+  "name": "tulip-backend",
   "version": "1.0.0",
-  "description": "Backend API for Hinge Clone",
+  "description": "Backend API for Tulip",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

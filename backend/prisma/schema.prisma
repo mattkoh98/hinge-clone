@@ -1,5 +1,5 @@
 // prisma/schema.prisma
-// Data model for Hinge-like app: profiles, photos, prompts,
+// Data model for Tulip dating app: profiles, photos, prompts,
 // targeted likes (photo/prompt), matches, conversations, messages.
 
 generator client {

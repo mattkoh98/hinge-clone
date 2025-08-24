@@ -27,7 +27,7 @@ export class MediaService {
       const result = await new Promise<any>((resolve, reject) => {
         cloudinary.uploader.upload_stream(
           {
-            folder: `hinge-clone/users/${userId}`,
+            folder: `tulip/users/${userId}`,
             public_id: `${Date.now()}-${fileName}`,
             resource_type: 'image',
             transformation: [

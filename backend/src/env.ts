@@ -15,9 +15,9 @@ const envSchema = z.object({
   REDIS_URL: z.string().url().optional(),
   
   // Cloudinary
-  CLOUDINARY_CLOUD_NAME: z.string(),
-  CLOUDINARY_API_KEY: z.string(),
-  CLOUDINARY_API_SECRET: z.string(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
   
   // Client
   CLIENT_URL: z.string().url().default('http://localhost:5174')
