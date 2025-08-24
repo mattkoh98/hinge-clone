@@ -1,7 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
-import { prisma } from '../lib/prisma'
 import { authenticate } from '../middleware/auth'
+import { validateBody } from '../middleware/validate'
+import { ProfileService } from '../services/profile.service'
+import { handleError } from '../lib/errors'
 
 // Request schemas
 const profileBasicSchema = z.object({
@@ -13,131 +15,88 @@ const profileBasicSchema = z.object({
 })
 
 const profileUpdateSchema = profileBasicSchema.partial()
+const photoSchema = z.object({
+  url: z.string().url(),
+  position: z.number().optional()
+})
+const promptSchema = z.object({
+  question: z.string().min(1),
+  answer: z.string().min(1)
+})
 
 export async function profileRoutes(fastify: FastifyInstance) {
+  const profileService = new ProfileService()
+
   // Get current profile
   fastify.get('/me', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { user } = request as any
     
     try {
-      const profile = await prisma.profile.findUnique({
-        where: { userId: user.id },
-        include: {
-          photos: { orderBy: { order: 'asc' } },
-          prompts: { orderBy: { order: 'asc' } }
-        }
-      })
-
-      if (!profile) {
-        return reply.status(404).send({ error: 'Profile not found' })
-      }
-
+      const profile = await profileService.getProfile(user.id)
       return profile
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 
-  // Create/update profile
-  fastify.post('/', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
+  // Create profile
+  fastify.post('/', {
+    preHandler: [authenticate, validateBody(profileBasicSchema)]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { user } = request as any
-    const profileData = profileBasicSchema.parse(request.body)
     
     try {
-      const profile = await prisma.profile.upsert({
-        where: { userId: user.id },
-        update: {
-          ...profileData,
-          completedAt: new Date()
-        },
-        create: {
-          userId: user.id,
-          ...profileData,
-          completedAt: new Date()
-        }
-      })
-
+      const profile = await profileService.createProfile(user.id, request.body as any)
       return profile
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 
   // Update profile
-  fastify.put('/', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.put('/', {
+    preHandler: [authenticate, validateBody(profileUpdateSchema)]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { user } = request as any
-    const profileData = profileUpdateSchema.parse(request.body)
     
     try {
-      const profile = await prisma.profile.update({
-        where: { userId: user.id },
-        data: profileData
-      })
-
+      const profile = await profileService.updateProfile(user.id, request.body as any)
       return profile
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 
   // Add photo to profile
-  fastify.post('/photo', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/photo', {
+    preHandler: [authenticate, validateBody(photoSchema)]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { user } = request as any
-    const { url } = request.body as any
     
     try {
-      const profile = await prisma.profile.findUnique({
-        where: { userId: user.id }
-      })
-
-      if (!profile) {
-        return reply.status(404).send({ error: 'Profile not found' })
-      }
-
-      const photo = await prisma.photo.create({
-        data: {
-          profileId: profile.id,
-          url,
-          position: 0 // Will be updated by frontend
-        }
-      })
-
+      const photo = await profileService.addPhoto(user.id, request.body as any)
       return photo
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 
   // Add prompt to profile
-  fastify.post('/prompt', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/prompt', {
+    preHandler: [authenticate, validateBody(promptSchema)]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { user } = request as any
-    const { question, answer } = request.body as any
     
     try {
-      const profile = await prisma.profile.findUnique({
-        where: { userId: user.id }
-      })
-
-      if (!profile) {
-        return reply.status(404).send({ error: 'Profile not found' })
-      }
-
-      const prompt = await prisma.prompt.create({
-        data: {
-          profileId: profile.id,
-          question,
-          answer
-        }
-      })
-
+      const prompt = await profileService.addPrompt(user.id, request.body as any)
       return prompt
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 }

@@ -1,10 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
-import bcrypt from 'bcryptjs'
-import { prisma } from '../lib/prisma'
 import { config } from '../config'
 import { authenticate } from '../middleware/auth'
-import { signToken } from '../lib/jwt'
+import { validateBody } from '../middleware/validate'
+import { AuthService } from '../services/auth.service'
+import { handleError } from '../lib/errors'
 
 // Request schemas
 const loginSchema = z.object({
@@ -19,43 +19,20 @@ const signupSchema = z.object({
 })
 
 export async function authRoutes(fastify: FastifyInstance) {
+  const authService = new AuthService()
+
   // Login
-  fastify.post('/login', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { email, password } = loginSchema.parse(request.body)
-    
+  fastify.post('/login', {
+    preHandler: validateBody(loginSchema)
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Find user
-      const user = await prisma.user.findUnique({
-        where: { email }
-      })
-
-      if (!user) {
-        return reply.status(401).send({ error: 'Invalid credentials' })
-      }
-
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.passwordHash)
-      if (!isValidPassword) {
-        return reply.status(401).send({ error: 'Invalid credentials' })
-      }
-
-      // Generate JWT token
-      const token = signToken({ userId: user.id })
-
-      // Create session
+      const result = await authService.login(request.body as any)
+      
+      // Set HTTP-only cookie
       const expiresAt = new Date()
       expiresAt.setDate(expiresAt.getDate() + 7) // 7 days
-
-      await prisma.session.create({
-        data: {
-          userId: user.id,
-          jti: token,
-          expiresAt
-        }
-      })
-
-      // Set HTTP-only cookie
-      reply.setCookie('token', token, {
+      
+      reply.setCookie('token', result.token, {
         httpOnly: true,
         secure: config.isProduction,
         sameSite: 'lax',
@@ -63,62 +40,25 @@ export async function authRoutes(fastify: FastifyInstance) {
         path: '/'
       })
 
-      return {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name
-        }
-      }
+      return { user: result.user }
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 
   // Signup
-  fastify.post('/signup', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { email, password, name } = signupSchema.parse(request.body)
-    
+  fastify.post('/signup', {
+    preHandler: validateBody(signupSchema)
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Check if user already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email }
-      })
-
-      if (existingUser) {
-        return reply.status(409).send({ error: 'User already exists' })
-      }
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 12)
-
-      // Create user
-      const user = await prisma.user.create({
-        data: {
-          email,
-          passwordHash: hashedPassword,
-          name
-        }
-      })
-
-      // Generate JWT token
-      const token = signToken({ userId: user.id })
-
-      // Create session
+      const result = await authService.signup(request.body as any)
+      
+      // Set HTTP-only cookie
       const expiresAt = new Date()
       expiresAt.setDate(expiresAt.getDate() + 7) // 7 days
-
-      await prisma.session.create({
-        data: {
-          userId: user.id,
-          jti: token,
-          expiresAt
-        }
-      })
-
-      // Set HTTP-only cookie
-      reply.setCookie('token', token, {
+      
+      reply.setCookie('token', result.token, {
         httpOnly: true,
         secure: config.isProduction,
         sameSite: 'lax',
@@ -126,16 +66,10 @@ export async function authRoutes(fastify: FastifyInstance) {
         path: '/'
       })
 
-      return {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name
-        }
-      }
+      return { user: result.user }
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 
@@ -144,20 +78,11 @@ export async function authRoutes(fastify: FastifyInstance) {
     const { user } = request as any
     
     try {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          createdAt: true
-        }
-      })
-
+      const dbUser = await authService.getCurrentUser(user.id)
       return dbUser
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 
@@ -166,18 +91,15 @@ export async function authRoutes(fastify: FastifyInstance) {
     const { user } = request as any
     
     try {
-      // Delete session
-      await prisma.session.deleteMany({
-        where: { userId: user.id }
-      })
-
+      await authService.logout(user.id)
+      
       // Clear cookie
       reply.clearCookie('token', { path: '/' })
 
       return { message: 'Logged out successfully' }
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 }

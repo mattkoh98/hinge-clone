@@ -1,72 +1,60 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
-import { prisma } from '../lib/prisma'
+import { z } from 'zod'
 import { authenticate } from '../middleware/auth'
+import { validateParams } from '../middleware/validate'
+import { MatchesService } from '../services/matches.service'
+import { handleError } from '../lib/errors'
+
+// Request schemas
+const matchIdSchema = z.object({
+  id: z.string().uuid()
+})
 
 export async function matchesRoutes(fastify: FastifyInstance) {
-  // Get user matches
+  const matchesService = new MatchesService()
+
+  // Get all matches for user
   fastify.get('/', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { user } = request as any
     
     try {
-      const matches = await prisma.match.findMany({
-        where: {
-          OR: [
-            { userAId: user.id },
-            { userBId: user.id }
-          ]
-        },
-        include: {
-          userA: { select: { id: true, name: true } },
-          userB: { select: { id: true, name: true } }
-        },
-        orderBy: { createdAt: 'desc' }
-      })
-
-      return matches.map(match => ({
-        id: match.id,
-        userA: match.userA,
-        userB: match.userB,
-        createdAt: match.createdAt
-      }))
+      const matches = await matchesService.getMatches(user.id)
+      return matches
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 
   // Get specific match
-  fastify.get('/:id', { preHandler: authenticate }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/:id', {
+    preHandler: [authenticate, validateParams(matchIdSchema)]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { user } = request as any
     const { id } = request.params as any
     
     try {
-      const match = await prisma.match.findFirst({
-        where: {
-          id,
-          OR: [
-            { userAId: user.id },
-            { userBId: user.id }
-          ]
-        },
-        include: {
-          userA: { select: { id: true, name: true } },
-          userB: { select: { id: true, name: true } }
-        }
-      })
-
-      if (!match) {
-        return reply.status(404).send({ error: 'Match not found' })
-      }
-
-      return {
-        id: match.id,
-        userA: match.userA,
-        userB: match.userB,
-        createdAt: match.createdAt
-      }
+      const match = await matchesService.getMatch(user.id, id)
+      return match
     } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({ error: 'Internal server error' })
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
+    }
+  })
+
+  // Delete match (unmatch)
+  fastify.delete('/:id', {
+    preHandler: [authenticate, validateParams(matchIdSchema)]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const { user } = request as any
+    const { id } = request.params as any
+    
+    try {
+      await matchesService.deleteMatch(user.id, id)
+      return { message: 'Match deleted successfully' }
+    } catch (error) {
+      const { message, statusCode } = handleError(error)
+      return reply.status(statusCode).send({ error: message })
     }
   })
 }

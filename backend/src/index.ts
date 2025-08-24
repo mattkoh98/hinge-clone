@@ -8,6 +8,7 @@ import { env } from './env'
 import { prisma } from './lib/prisma'
 import { authRateLimit, apiRateLimit } from './lib/ratelimit'
 import { corsMiddleware } from './middleware/cors'
+import { setupErrorHandler } from './middleware/errorHandler'
 import { authRoutes } from './routes/auth'
 import { profileRoutes } from './routes/profile'
 import { likesRoutes } from './routes/likes'
@@ -36,6 +37,9 @@ await fastify.register(multipart, {
     files: 1
   }
 })
+
+// Setup error handling
+setupErrorHandler(fastify)
 
 // Add custom middleware
 fastify.addHook('preHandler', corsMiddleware)
